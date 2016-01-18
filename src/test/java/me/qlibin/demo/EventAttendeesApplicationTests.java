@@ -46,7 +46,7 @@ public class EventAttendeesApplicationTests {
 
         assertTrue("Event contains correct attendees", eventAttendees.stream().map(EventAttendee::getAttendeeId).collect(Collectors.toList()).containsAll(attendees));
 
-        List<Event> events = dataAccessService.getEvents(100, 15000, new HashSet<>(Arrays.asList(3, 6)));
+        List<Event> events = dataAccessService.findEvents(100, 15000, new HashSet<>(Arrays.asList(3, 6)));
 
         assertTrue("Event filter works", events.stream().anyMatch(event1 -> event1.getId().equals(event.getId())));
 

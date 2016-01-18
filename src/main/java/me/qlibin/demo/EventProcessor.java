@@ -207,7 +207,7 @@ public class EventProcessor {
                 for (int i = 0; i < getRandom(maxEventAttendees); i++) {
                     attendees.add(getRandom(maxAttendeeId));
                 }
-                List<Event> events = dataAccessService.getEvents(t1, t2, attendees);
+                List<Event> events = dataAccessService.findEvents(t1, t2, attendees);
                 if (log.isDebugEnabled()) {
                     log.debug("Find events in a range of [{}, {}] with attendees ({})\n\t Events found: {}",
                             t1, t2, Arrays.toString(attendees.toArray()), events.size());
