@@ -58,8 +58,8 @@ public class Application implements ApplicationRunner {
 
         log.info("Creating tables if not exist");
 
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event(id int, startTime int, " +
-                "PRIMARY KEY i_event_id(id), KEY i_event_startTime(startTime))");
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event(id int, startTime int, attendees VARCHAR(128), " +
+                "PRIMARY KEY i_event_id(id), KEY i_event_startTime(startTime), FULLTEXT INDEX fti_event_attendees(attendees))");
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event_attendee(eventId int, attendeeId int, " +
                 "KEY i_event_attendee_eventId(eventId), KEY i_event_attendee_attendeeId(attendeeId), " +
                 "CONSTRAINT fk_event_attendee_event FOREIGN KEY (eventId) REFERENCES event (id))");

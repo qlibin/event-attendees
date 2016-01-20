@@ -40,12 +40,6 @@ public class EventAttendeesApplicationTests {
 
         assertThat("Start time saved correctly", event.getStartTime(), is(12030));
 
-        List<EventAttendee> eventAttendees = dataAccessService.getEventAttendees(123);
-
-        assertThat("Event has 4 attendees", eventAttendees, hasSize(4));
-
-        assertTrue("Event contains correct attendees", eventAttendees.stream().map(EventAttendee::getAttendeeId).collect(Collectors.toList()).containsAll(attendees));
-
         List<Event> events = dataAccessService.findEvents(100, 15000, new HashSet<>(Arrays.asList(3, 6)));
 
         assertTrue("Event filter works", events.stream().anyMatch(event1 -> event1.getId().equals(event.getId())));

@@ -1,7 +1,7 @@
 package me.qlibin.demo;
 
+import com.google.common.base.Joiner;
 import me.qlibin.demo.domain.Event;
-import me.qlibin.demo.domain.EventAttendee;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +10,7 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -40,20 +38,28 @@ public class DataAccessService {
         if (!hasEvent(eventId)) {
             log.trace("Create new eventId = {}", eventId);
             // if not exists create it
-            createEvent(eventId, newStartTime);
+            createEvent(eventId, newStartTime, serializeAttendees(attendees));
         } else {
             log.trace("Update eventId = {}", eventId);
             // if exists update its startTime
-            updateEvent(eventId, newStartTime);
-            log.trace("Remove attendees from eventId = {}", eventId);
-            // remove all event_attendees with eventId
-            removeEventAttendees(eventId);
+            updateEvent(eventId, newStartTime, serializeAttendees(attendees));
         }
-        log.trace("Add attendees to eventId = {}", eventId);
-        // write new attendee set
-        if (attendees.size() > 0) {
-            createEventAttendees(eventId, attendees);
-        }
+    }
+
+    private String serializeAttendees(Set<Integer> attendees) {
+        return Joiner.on(' ').join(integersToWords(attendees));
+    }
+
+    private String attendeesToQuery(Set<Integer> attendees) {
+        return "+" + Joiner.on(" +").join(integersToWords(attendees));
+    }
+
+    private Collection<String> integersToWords(Collection<Integer> attendees) {
+        return attendees
+                .stream()
+                .sorted()
+                .map(attendeeId -> "att_" + attendeeId)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -66,23 +72,11 @@ public class DataAccessService {
      * @return List of requested events
      */
     public List<Event> findEvents(int t1, int t2, Set<Integer> attendees) {
-        StringBuilder join = new StringBuilder();
-        List<Object> args = new ArrayList<>(attendees.stream().sorted().collect(Collectors.toList()));
-        // in order to filter events with all attendees from request
-        // join event_attendee table as many times as attendees count in a request
-        args.forEach(attendee -> {
-            String alias = "ea" + attendee;
-            join.append("join event_attendee ").append(alias)
-                    .append(" on e.id=").append(alias).append(".eventId and ")
-                    .append(alias).append(".attendeeId=? ");
-        });
-        args.add(t1);
-        args.add(t2);
+        String like = attendeesToQuery(attendees);
         return jdbcTemplate.query(
-                "SELECT e.* FROM event e " + join.toString() +
-                        "WHERE e.startTime >= ? and e.startTime <= ?",
-                args.toArray(),
-                (rs, rowNum) -> new Event(rs.getInt("id"), rs.getInt("startTime"))
+                "select * from event where startTime >= ? and startTime <= ? and MATCH(attendees) AGAINST(? IN BOOLEAN MODE) > 0 ",
+                new Object[]{t1, t2, like},
+                (rs, rowNum) -> new Event(rs.getInt("id"), rs.getInt("startTime"), rs.getString("attendees"))
         );
     }
 
@@ -96,37 +90,16 @@ public class DataAccessService {
     public Event getEvent(int eventId) {
         return DataAccessUtils.singleResult(jdbcTemplate.query(
                 "SELECT * FROM event WHERE id = ?", new Object[] { eventId },
-                (rs, rowNum) -> new Event(rs.getInt("id"), rs.getInt("startTime"))
+                (rs, rowNum) -> new Event(rs.getInt("id"), rs.getInt("startTime"), rs.getString("attendees"))
         ));
     }
 
-    public List<EventAttendee> getEventAttendees(int eventId) {
-        return jdbcTemplate.query(
-                "SELECT * FROM event_attendee " +
-                        "WHERE eventId = ? ",
-                new Object[] {eventId},
-                (rs, rowNum) -> new EventAttendee(rs.getInt("eventId"), rs.getInt("attendeeId"))
-        );
+    private void createEvent(int eventId, int newStartTime, String attendees) {
+        jdbcTemplate.update("insert into event values(?, ?, ?)", eventId, newStartTime, attendees);
     }
 
-    private void createEvent(int eventId, int newStartTime) {
-        jdbcTemplate.update("insert into event values(?, ?)", eventId, newStartTime);
-    }
-
-    private void updateEvent(int eventId, int newStartTime) {
-        jdbcTemplate.update("update event set startTime = ? where id = ?", newStartTime, eventId);
-    }
-
-    private void createEventAttendees(int eventId, Set<Integer> attendees) {
-        jdbcTemplate.batchUpdate(
-                "insert into event_attendee values(?, ?)",
-                attendees.stream().sorted().map(attendeeId -> new Object[] {eventId, attendeeId})
-                        .collect(Collectors.toList())
-        );
-    }
-
-    private void removeEventAttendees(int eventId) {
-        jdbcTemplate.update("delete from event_attendee where eventId = ?", eventId);
+    private void updateEvent(int eventId, int newStartTime, String attendees) {
+        jdbcTemplate.update("update event set startTime = ?, attendees = ? where id = ?", newStartTime, attendees, eventId);
     }
 
 }

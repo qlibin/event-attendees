@@ -12,7 +12,15 @@ public class Event implements Serializable {
 
     private Integer startTime;
 
+    private String attendees;
+
     public Event() {
+    }
+
+    public Event(Integer id, Integer startTime, String attendees) {
+        this.id = id;
+        this.startTime = startTime;
+        this.attendees = attendees;
     }
 
     public Event(Integer id, Integer startTime) {
@@ -36,4 +44,11 @@ public class Event implements Serializable {
         this.startTime = startTime;
     }
 
+    public String getAttendees() {
+        return attendees;
+    }
+
+    public void setAttendees(String attendees) {
+        this.attendees = attendees;
+    }
 }
