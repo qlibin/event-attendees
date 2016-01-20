@@ -18,11 +18,13 @@ Provide databse credentials in src/main/resources/application.properties file
 
 Run program in CLI on Linux or Mac:
 
-    $ ./mvnw spring-boot:run
+    $ ./mvnw spring-boot:run -Drun.arguments=--clean
 
 Or Windows:
 
-    $ mvnw.cmd spring-boot:run
+    $ mvnw.cmd spring-boot:run -Drun.arguments=--clean
+
+"-Drun.arguments=--clean" is for cleaning tables before executing program.
 
 # Task
 
