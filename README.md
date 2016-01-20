@@ -2,6 +2,8 @@
 
 In order to build and execute program Apache Maven 3.^ and MySQL Server are required.
 
+MySQL server should support FULLTEXT index on InnoDB engine. Min length for word to index must be no less than 5.
+
 Create database in mysql cosole:
     
     > create database event_attendees;
